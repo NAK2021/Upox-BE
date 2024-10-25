@@ -9,7 +9,10 @@ public enum ErrorCode {
     GMAIL_NOT_EXISTED(406,"Gmail không tồn tại"),
     INVALID_GMAIL(407,"Gmail không hợp lệ"),
     USER_NOT_EXISTED(408,"Người dùng không tồn tại"),
-    USER_NOT_AUTHENTICATED(401, "Người dùng chưa được uỷ quyền")
+    USER_NOT_AUTHENTICATED(401, "Người dùng chưa được xác thực"),
+    USER_NOT_AUTHORIZED(403, "Người dùng chưa được uỷ quyền"),
+    TOKEN_IS_EXPIRED(409, "Token hết hạn"),
+
 
     ; //Define các Error code
 

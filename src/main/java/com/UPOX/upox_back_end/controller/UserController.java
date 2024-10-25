@@ -47,8 +47,23 @@ public class UserController {
         return apiResponse;
     }
 
-    @PutMapping("{userId}") //update Password
+    @GetMapping("/myInfo")
+    ApiResponse<UserResponse> getSelfInfo(){
+        ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(userService.getMyInfo());
+        return apiResponse;
+    }
+
+    @PutMapping("{userId}") //update information
     ApiResponse<UserResponse> updateUser(@PathVariable("userId") String userId, @RequestBody @Valid UserUpdateRequest objRequest){
+        ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(userService.updateRequest(userId,objRequest));
+        return apiResponse;
+    }
+
+    //Cho phép access mà không cần gửi token
+    @PutMapping("/forget-password/{userId}") //update information
+    ApiResponse<UserResponse> updatePassword(@PathVariable("userId") String userId, @RequestBody @Valid UserUpdateRequest objRequest){
         ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
         apiResponse.setResult(userService.updateRequest(userId,objRequest));
         return apiResponse;
@@ -59,4 +74,6 @@ public class UserController {
         userService.deleteRequest(userId);
         return "Delete Successfully";
     }
+
+
 }

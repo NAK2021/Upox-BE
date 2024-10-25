@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 
 @Data //Cung cấp các method getter/setter, toString, equalHashCode, requiredArgsConstructor
@@ -14,7 +15,7 @@ import java.time.LocalDate;
 public class UserResponse {
      String id;
      String username;
-     String password; //password phải được mã hoá
+//     String password; //password phải được mã hoá
      String firstname;
      String lastname;
      LocalDate dob;
@@ -22,4 +23,9 @@ public class UserResponse {
      int gender; //1: Male; 2: Female
      String city;
      String phoneNum;
+     Set<String> roles;
+
+     //Vừa thêm
+     boolean activated;
+     boolean googleLogin;
 }

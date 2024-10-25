@@ -1,4 +1,4 @@
-package com.UPOX.upox_back_end.dto.response;
+package com.UPOX.upox_back_end.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,8 +8,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder //Tạo ra 1 builder class cho một DTO
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticateResponse {
+public class LogoutRequest {
     String token;
-    String refreshToken;
-    boolean authenticated;
 }

@@ -1,8 +1,10 @@
 package com.UPOX.upox_back_end.model;
 
+import com.UPOX.upox_back_end.dto.request.TrackedUserProductRequest;
 import com.UPOX.upox_back_end.dto.request.UserCreationRequest;
 import com.UPOX.upox_back_end.dto.request.UserUpdateRequest;
 import com.UPOX.upox_back_end.dto.response.UserResponse;
+import com.UPOX.upox_back_end.entity.TrackedUserProduct;
 import com.UPOX.upox_back_end.entity.User;
 import com.UPOX.upox_back_end.model._interface.MappingInterface;
 
@@ -15,7 +17,12 @@ public class Mapper implements MappingInterface {
         newUser.setUsername(request.getUsername());
         newUser.setPassword(request.getPassword());
 
-        return  newUser;
+
+        //Vừa thêm
+        newUser.setActivated(false);
+        newUser.setGoogleLogin(false);
+
+        return newUser;
     }
 
     @Override
@@ -36,7 +43,7 @@ public class Mapper implements MappingInterface {
 
         userResponse.setId(user.getId());
         userResponse.setUsername(user.getUsername());
-        userResponse.setPassword(user.getPassword());
+//        userResponse.setPassword(user.getPassword());
         userResponse.setFirstname(user.getFirstname());
         userResponse.setLastname(user.getLastname());
         userResponse.setDob(user.getDob());
@@ -44,7 +51,18 @@ public class Mapper implements MappingInterface {
         userResponse.setCity(user.getCity());
         userResponse.setPhoneNum(user.getPhoneNum());
         userResponse.setGender(user.getGender());
+        userResponse.setRoles(user.getRoles());
+
+        //Vừa thêm
+        userResponse.setActivated(user.isActivated());
+        userResponse.setGoogleLogin(user.isGoogleLogin());
 
         return  userResponse;
+    }
+
+    @Override
+    public TrackedUserProduct toTrackedUserProduct(TrackedUserProductRequest request){
+
+        return null;
     }
 }

@@ -1,13 +1,7 @@
 package com.UPOX.upox_back_end.controller;
 
-import com.UPOX.upox_back_end.dto.request.ActivateRequest;
-import com.UPOX.upox_back_end.dto.request.AuthenticateRequest;
-import com.UPOX.upox_back_end.dto.request.IntrospectRequest;
-import com.UPOX.upox_back_end.dto.request.UserUpdateRequest;
-import com.UPOX.upox_back_end.dto.response.ApiResponse;
-import com.UPOX.upox_back_end.dto.response.AuthenticateResponse;
-import com.UPOX.upox_back_end.dto.response.IntrospectResponse;
-import com.UPOX.upox_back_end.dto.response.UserResponse;
+import com.UPOX.upox_back_end.dto.request.*;
+import com.UPOX.upox_back_end.dto.response.*;
 import com.UPOX.upox_back_end.entity.User;
 import com.UPOX.upox_back_end.exception.ErrorCode;
 import com.UPOX.upox_back_end.model.Otp;
@@ -18,22 +12,39 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublisher;
+
+import java.net.http.HttpResponse;
+import java.security.GeneralSecurityException;
 import java.text.ParseException;
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 @RestController
 @RequestMapping(path = "/api/v1/auth")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class AuthenticateController {
 
     AuthenticateService authenticateService;
     UserService userService;
 
-    @GetMapping("/{userGmail}")
+    @GetMapping("send-mail/{userGmail}")
     Object getOtpForChangePassWord(@PathVariable("userGmail") String userGmail){
         //đã có tài khoản rồi
         //trả về:
@@ -88,11 +99,38 @@ public class AuthenticateController {
         return apiResponse;
     }
 
+    @PostMapping("/log-out")
+    ApiResponse<AuthenticateResponse> logOut (@RequestBody LogoutRequest logoutRequest)
+            throws ParseException, JOSEException {
+        authenticateService.invalidateToken(logoutRequest); //Xác nhận đã kích hoạt tài khoản chưa?
+        ApiResponse<AuthenticateResponse> apiResponse = new ApiResponse<>();
+        return apiResponse;
+    }
+
     @PostMapping("/introspect")
     ApiResponse<IntrospectResponse> introspect(@RequestBody IntrospectRequest introspectRequest)
             throws ParseException, JOSEException {
         var result = authenticateService.introspect(introspectRequest);
         ApiResponse<IntrospectResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(result);
+
+        return apiResponse;
+    }
+
+    @PostMapping("/refresh-token")
+    ApiResponse<AuthenticateResponse> updateAccessToken(@RequestBody RefreshTokenRequest refreshTokenRequest)
+            throws JOSEException, ParseException {
+        var result = authenticateService.updateAccessToken(refreshTokenRequest);
+        ApiResponse<AuthenticateResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(result);
+
+        return apiResponse;
+    }
+
+    @PostMapping("/google-login")
+    ApiResponse<GoogleUserResponse> googleLogin(@RequestBody GoogleLoginRequest googleLoginRequest) throws GeneralSecurityException, IOException {
+        var result = authenticateService.googleLogin(googleLoginRequest);
+        ApiResponse<GoogleUserResponse> apiResponse = new ApiResponse<>();
         apiResponse.setResult(result);
 
         return apiResponse;

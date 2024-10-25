@@ -8,8 +8,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder //Tạo ra 1 builder class cho một DTO
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticateResponse {
-    String token;
-    String refreshToken;
-    boolean authenticated;
+public class GoogleUserResponse {
+    UserResponse userResponse;
+    AuthenticateResponse authenticateResponse;
 }
