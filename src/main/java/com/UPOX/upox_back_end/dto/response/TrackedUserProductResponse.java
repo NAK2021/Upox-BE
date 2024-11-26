@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TrackedUserProductResponse {
 
+    String transactionId;
+    String productId;
     String productName;
     String statusName;
     String categoryName;
@@ -26,7 +28,8 @@ public class TrackedUserProductResponse {
     String frequency;
     String wayPreserve;
     boolean isOpened;
+    String imagePath;
 
-
+    //Assume that we only manage 1 in-use product at a time
     TrackedUserProductOpened trackedUserProductOpened;
 }

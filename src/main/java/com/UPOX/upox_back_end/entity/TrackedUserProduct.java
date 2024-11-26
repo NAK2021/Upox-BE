@@ -28,10 +28,11 @@ public class TrackedUserProduct implements Persistable<TrackedUserProductID> {
     @JoinColumn(name = "transaction_id")
     Transaction transaction;
 
-    @Id
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    User user;
+    //Xoá mối quan hệ
+//    @Id
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "user_id")
+//    User user;
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
@@ -55,7 +56,7 @@ public class TrackedUserProduct implements Persistable<TrackedUserProductID> {
     LocalDateTime dateStatusChange;
     int peopleUse;
     int volume;
-    int cost;
+    int cost; //Tổng tiền của sản phẩm (theo thói quen của người dùng sẽ nhập giá tổng)
     //Vừa update
     String frequency; // 1/1: 1 ngày 1 lần; 1/2: 2 ngày 1 lần, 1/7: 1 tuần 1 lần; 1/30: 1 tháng 1 lần; 2/1: 2 lần 1 ngày
     String wayPreserve;
@@ -64,15 +65,30 @@ public class TrackedUserProduct implements Persistable<TrackedUserProductID> {
     //Opened
     boolean isOpened;
     @Column(nullable = true)
-    LocalDateTime dateOpen;
+    LocalDateTime dateOpen; // latest date open a product
     @Column(nullable = true)
-    int volumeLeft;
+    int volumeLeft; //total volume left
 
-    //Vừa thêm
+
     @Column(nullable = true)
-    int numProductOpened;
+    int numProductOpened; //total product open
     int quantity;
-    String wayPayment;
+
+    //Mới thêm
+    String productsInUse; //thông tin chi tiết product đã mở //JSON
+    //{
+    // productsInUse: [
+    //     {
+    //      "id":
+    //      "openDateStatusChange":
+    //      "dateOpen":
+    //      "volumeLeft":
+    //      "openExpiryDate":
+    //      "openStatusId":
+    //      "avgAmountUse":
+    //     }
+    //  ]
+    // }
 
     @Transient
     private boolean isNew = true;
@@ -81,7 +97,7 @@ public class TrackedUserProduct implements Persistable<TrackedUserProductID> {
 
     @Override
     public TrackedUserProductID getId() {
-        return new TrackedUserProductID(transaction, user, product);
+        return new TrackedUserProductID(transaction, product);
     }
 
     @Override

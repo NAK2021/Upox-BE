@@ -29,6 +29,11 @@ public class Transaction {
     List<TrackedUserProduct> trackedUserProducts;
 
 
+    //Connect với expense
+    @ManyToOne
+    @JoinColumn(name = "expense_id")
+    Expense expense;
+
     public void addTrackedUserProduct(TrackedUserProduct trackedUserProduct){
         if(trackedUserProducts == null){
             trackedUserProducts = new ArrayList<>();

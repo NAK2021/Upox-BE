@@ -33,6 +33,11 @@ public class Product {
     String defExpiryDate;
     String defPreserveWay;
     String segment;
+    double avgUsageAmount;
+    String imagePath;
+
+    //Mới thêm
+    String defOpenedExpiredDate; //8 tiếng (thời gian + đơn vị)
 
     //Foreign Key
 
@@ -52,4 +57,5 @@ public class Product {
         trackedUserProducts.add(trackedUserProduct);
         trackedUserProduct.setProduct(this);
     }
+
 }

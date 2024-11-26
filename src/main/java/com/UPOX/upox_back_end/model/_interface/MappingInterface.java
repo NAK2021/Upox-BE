@@ -1,11 +1,12 @@
 package com.UPOX.upox_back_end.model._interface;
 
 import com.UPOX.upox_back_end.dto.request.TrackedUserProductRequest;
+import com.UPOX.upox_back_end.dto.request.TrackedUserProductUpdateRequest;
 import com.UPOX.upox_back_end.dto.request.UserCreationRequest;
 import com.UPOX.upox_back_end.dto.request.UserUpdateRequest;
+import com.UPOX.upox_back_end.dto.response.TrackedUserProductResponse;
 import com.UPOX.upox_back_end.dto.response.UserResponse;
-import com.UPOX.upox_back_end.entity.TrackedUserProduct;
-import com.UPOX.upox_back_end.entity.User;
+import com.UPOX.upox_back_end.entity.*;
 
 public interface MappingInterface {
 
@@ -16,8 +17,15 @@ public interface MappingInterface {
     void updateUser(User user, UserUpdateRequest request);
 
 
-    //Tracked User Product
-    TrackedUserProduct toTrackedUserProduct(TrackedUserProductRequest request);
+    //Create Tracked User Product
+    TrackedUserProduct toTrackedUserProduct(TrackedUserProductRequest request, Status status, Transaction transaction,
+                                            Product product);
+
+    //Update Tracked User Product
+    void updateTrackedUserProduct(TrackedUserProduct trackedUserProduct, TrackedUserProductUpdateRequest updateRequest);
+
+    //Create User Response
+    TrackedUserProductResponse toTrackedUserProductResponse(TrackedUserProduct trackedUserProduct);
 
 
 }

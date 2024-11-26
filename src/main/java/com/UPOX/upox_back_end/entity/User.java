@@ -25,8 +25,8 @@ public class User {
     String id;
     String username;
     String password; //password phải được mã hoá
-    String firstname;
-    String lastname;
+    String firstName;
+    String lastName;
     LocalDate dob;
     String email;
     int gender; //1: Male; 2: Female
@@ -51,20 +51,25 @@ public class User {
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
     List<Expense> expenses;
 
+    //Xoá
     //One to Many với Tracked User Product
-    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
-    List<TrackedUserProduct> trackedUserProducts;
+//    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
+//    List<TrackedUserProduct> trackedUserProducts;
 
     //One to Many với User Achievements
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
     List<UserAchievement> userAchievements;
 
+    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
+    List<FirebaseToken> firebaseTokens;
 
-    public void addTrackedUserProduct(TrackedUserProduct trackedUserProduct){
-        if(trackedUserProducts == null){
-            trackedUserProducts = new ArrayList<>();
-        }
-        trackedUserProducts.add(trackedUserProduct);
-        trackedUserProduct.setUser(this);
-    }
+
+    //Xoá
+//    public void addTrackedUserProduct(TrackedUserProduct trackedUserProduct){
+//        if(trackedUserProducts == null){
+//            trackedUserProducts = new ArrayList<>();
+//        }
+//        trackedUserProducts.add(trackedUserProduct);
+//        trackedUserProduct.setUser(this);
+//    }
 }

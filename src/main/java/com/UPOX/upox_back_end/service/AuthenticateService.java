@@ -373,8 +373,8 @@ public class AuthenticateService {
         User newUser = new User();
         newUser.setUsername(name);
         newUser.setEmail(email);
-        newUser.setFirstname(familyName);
-        newUser.setLastname(givenName);
+        newUser.setFirstName(familyName);
+        newUser.setLastName(givenName);
         newUser.setActivated(true);
         newUser.setGoogleLogin(true);
 

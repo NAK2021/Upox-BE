@@ -28,6 +28,9 @@ public class Category {
     @Column(name = "category_name",unique = true)
     String categoryName;
 
+    String imagePath;
+
+
     //Foreign Key
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Product> products;

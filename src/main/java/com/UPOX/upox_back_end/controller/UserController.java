@@ -23,6 +23,7 @@ public class UserController {
 
     UserService userService;
 
+    //Đăng ký
     @PostMapping
     ApiResponse<UserResponse> createUser(@RequestBody @Valid UserCreationRequest objRequest){
         //@Valid khai báo cho framework biết là phải validate obj này theo rule đã set sẵn

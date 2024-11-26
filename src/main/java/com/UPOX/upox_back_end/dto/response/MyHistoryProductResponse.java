@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.List;
+import java.util.Set;
 
 @Data //Cung cấp các method getter/setter, toString, equalHashCode, requiredArgsConstructor
 @NoArgsConstructor
@@ -12,5 +13,5 @@ import java.util.List;
 @Builder //Tạo ra 1 builder class cho một DTO
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MyHistoryProductResponse {
-    List<TrackedUserProduct> trackedUserProductList;
+    Set<String> trackedUserProductList;
 }

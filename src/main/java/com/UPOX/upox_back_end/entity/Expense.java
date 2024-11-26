@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -28,4 +29,8 @@ public class Expense {
     //Many to One với User
     @ManyToOne(fetch = FetchType.LAZY)
     User user;
+
+    //Connect với Transaction
+    @OneToMany(mappedBy = "expense",cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Transaction> transactions;
 }

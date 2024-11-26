@@ -19,7 +19,6 @@ import java.util.Objects;
 @Embeddable
 public class TrackedUserProductID implements Serializable {
     Transaction transaction;
-    User user;
     Product product;
 
     @Override
@@ -27,13 +26,12 @@ public class TrackedUserProductID implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TrackedUserProductID that = (TrackedUserProductID) o;
-        return Objects.equals(user, that.user) &&
-                Objects.equals(product, that.product) &&
-                Objects.equals(transaction, that.transaction);
+        return Objects.equals(product.getId(), that.product.getId()) &&
+                Objects.equals(transaction.getTransactionId(), that.transaction.getTransactionId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(user, product, transaction);
+        return Objects.hash(product, transaction);
     }
 }
