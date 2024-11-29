@@ -6,6 +6,7 @@ import com.UPOX.upox_back_end.entity.Notification;
 import com.UPOX.upox_back_end.entity.TrackedUserProduct;
 import com.UPOX.upox_back_end.entity.Transaction;
 import com.UPOX.upox_back_end.model.HomePageInformation;
+import com.UPOX.upox_back_end.model.TrackedCalendarProduct;
 import com.UPOX.upox_back_end.model.WarningCategory;
 import com.UPOX.upox_back_end.service.NotificationService;
 import com.UPOX.upox_back_end.service.TrackedUserProductService;
@@ -20,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -73,6 +75,8 @@ public class TrackedUserProductController {
         return apiResponse;
     }
 
+
+    //Remove later
     @PostMapping(path = "/updateCategory")
     void updateCategory(){
         trackedUserProductService.updateProductCategory();
@@ -82,24 +86,33 @@ public class TrackedUserProductController {
 
     //Chưa test
     @PutMapping(path = "/finishUsing/{productId}/{transactionId}")
-    void finishUsing(@PathVariable("productId") String productId, @PathVariable("transactionId") String transactionId){
+    ApiResponse<TrackedUserProductResponse> finishUsing(@PathVariable("productId") String productId, @PathVariable("transactionId") String transactionId){
         var res = trackedUserProductService.finishUsingProduct(productId,transactionId);
+        ApiResponse<TrackedUserProductResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(res);
+        return apiResponse;
     }
 
     //Delete --> DELETE --> Xoá một sản phẩm ra khỏi inventory của bạn
 
     //Chưa test
     @DeleteMapping(path = "/deleteProduct/{productId}/{transactionId}")
-    void deleteProduct(@PathVariable("productId") String productId, @PathVariable("transactionId") String transactionId){
+    ApiResponse<String> deleteProduct(@PathVariable("productId") String productId, @PathVariable("transactionId") String transactionId){
         var res = trackedUserProductService.deleteProduct(productId,transactionId);
+        ApiResponse<String> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(res);
+        return apiResponse;
     }
     //Finish --> PUT --> Sử dụng hoàn tất xong một sản phẩm ĐANG ĐƯỢC SỬ DỤNG
 
     //Chưa test
     @PutMapping(path = "/updateProduct/{productId}/{transactionId}")
-    void updateProduct(@PathVariable("productId") String productId, @PathVariable("transactionId") String transactionId
+    ApiResponse<TrackedUserProductResponse> updateProduct(@PathVariable("productId") String productId, @PathVariable("transactionId") String transactionId
         ,@RequestBody TrackedUserProductUpdateRequest updateRequest){
         var res = trackedUserProductService.updateProduct(productId,transactionId, updateRequest);
+        ApiResponse<TrackedUserProductResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(res);
+        return apiResponse;
     }
 
     //Choose using immediately --> GET (boolean) --> Check xem đã có product tương tự đã được sử dụng chưa
@@ -114,6 +127,7 @@ public class TrackedUserProductController {
         return apiResponse;
     }
 
+
     @GetMapping("/homePage")
     ApiResponse<HomePageInformation> getHomePageInformation(){
         var context = SecurityContextHolder.getContext();
@@ -123,7 +137,7 @@ public class TrackedUserProductController {
         List<WarningCategory> warningCategories = trackedUserProductService.getWarningCategories(userName);
 
         //get number of unread notifications
-        List<Notification> notifications = notificationService.getNotifications(userName);
+        List<NotificationResponse> notifications = notificationService.getNotifications(userName);
 
         var res = HomePageInformation.builder()
                 .warningCategories(warningCategories)
@@ -138,22 +152,32 @@ public class TrackedUserProductController {
     //Đã test - Chưa test nhiều loại
     //Inventory --> GET: TrackedUserProductListResponse --> Danh sách các product của bạn
     @GetMapping(path = "/getInventory")
-    void getInitialInventory(){
+    ApiResponse<TrackedUserProductListResponse> getInitialInventory(){
         var context = SecurityContextHolder.getContext();
         String userName = context.getAuthentication().getName();
         var res = trackedUserProductService.getInitialInventory(userName);
+        ApiResponse<TrackedUserProductListResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(TrackedUserProductListResponse.builder()
+                .responseList(trackedUserProductService.toTrackedUserProductResponse(res))
+                .build());
+        return apiResponse;
     }
 
     //Hứng parameters để filter (Định nghĩa cái filter bằng ENUM)
     @GetMapping(path = "/getInventory/{searchValue}/{categories}/{status}/{lateness}/{sortBy}/{isAscending}")
-    void getFilterInventory(@PathVariable("categories") String categories, @PathVariable("status") String status,
+    //getInventory/""/""/""/""/EXPIRED_DATE/true
+    ApiResponse<TrackedUserProductListResponse> getFilterInventory(@PathVariable("categories") String categories, @PathVariable("status") String status,
                             @PathVariable("lateness") String lateness, @PathVariable("searchValue") String searchValue,
                             @PathVariable("sortBy") String sortBy, @PathVariable("isAscending") boolean isAscending){
 
         var context = SecurityContextHolder.getContext();
         String userName = context.getAuthentication().getName();
         var res = trackedUserProductService.getWithConditionInventory(userName,categories,status,lateness,searchValue,sortBy,isAscending);
-
+        ApiResponse<TrackedUserProductListResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(TrackedUserProductListResponse.builder()
+                .responseList(res)
+                .build());
+        return apiResponse;
     }
 
 
@@ -161,7 +185,7 @@ public class TrackedUserProductController {
     //Đã test - Chưa test nhiều loại
     @GetMapping(path = "/getCalendar/{monthYear}")
     //monthYear = mm-yyyy
-    void getCalendar(@PathVariable("monthYear") String monthYear){
+    ApiResponse<List<TrackedCalendarProduct>> getCalendar(@PathVariable("monthYear") String monthYear){
         var context = SecurityContextHolder.getContext();
         String userName = context.getAuthentication().getName();
 
@@ -171,13 +195,18 @@ public class TrackedUserProductController {
 
         var res = trackedUserProductService.getCalenderStatus(userName,month,year);
 
+        ApiResponse<List<TrackedCalendarProduct>> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(res);
+        return apiResponse;
     }
 
     //Expense page --> GET (tháng, năm)
     //Hứng parameters để filter (tháng, năm)
     //Đã test - Chưa test nhiều loại
     @GetMapping(path = "/getExpense/{monthYear}")
-    void getExpense(@PathVariable("monthYear") String monthYear){
+     ApiResponse<ExpenseResponse> getExpense(@PathVariable("monthYear") String monthYear){
+        //month-year: 10-2024
+
         var context = SecurityContextHolder.getContext();
         String userName = context.getAuthentication().getName();
 
@@ -185,8 +214,12 @@ public class TrackedUserProductController {
         int month = Integer.parseInt(monthAndYear[0]); //mm
         int year = Integer.parseInt(monthAndYear[1]); //yyyy
 
-        trackedUserProductService.getExpense(userName,month,year);
+        var res = trackedUserProductService.getExpense(userName,month,year);
 
+        //Trả về
+        ApiResponse<ExpenseResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(res);
+        return apiResponse;
     }
 
 

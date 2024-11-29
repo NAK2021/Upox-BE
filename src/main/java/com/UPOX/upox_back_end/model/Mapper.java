@@ -14,6 +14,7 @@ import com.google.gson.JsonParser;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.UUID;
 
 public class Mapper implements MappingInterface {
@@ -35,14 +36,16 @@ public class Mapper implements MappingInterface {
 
     @Override
     public void updateUser(User needUpdateUser, UserUpdateRequest request) {
-        needUpdateUser.setPassword(request.getPassword());
-        needUpdateUser.setFirstName(request.getFirstname());
-        needUpdateUser.setLastName(request.getLastname());
-        needUpdateUser.setDob(request.getDob());
-        needUpdateUser.setEmail(request.getEmail());
-        needUpdateUser.setCity(request.getCity());
-        needUpdateUser.setPhoneNum(request.getPhoneNum());
+
+        needUpdateUser.setPassword(!Objects.isNull(request.getPassword())?request.getPassword():needUpdateUser.getPassword());
+        needUpdateUser.setFirstName(!Objects.isNull(request.getFirstname())?request.getFirstname():needUpdateUser.getFirstName());
+        needUpdateUser.setLastName(!Objects.isNull(request.getLastname())?request.getLastname():needUpdateUser.getLastName());
+        needUpdateUser.setDob(!Objects.isNull(request.getDob())?request.getDob():needUpdateUser.getDob());
+        needUpdateUser.setEmail(!Objects.isNull(request.getEmail())?request.getEmail():needUpdateUser.getEmail());
+        needUpdateUser.setCity(!Objects.isNull(request.getCity())?request.getCity():needUpdateUser.getCity());
+        needUpdateUser.setPhoneNum(!Objects.isNull(request.getPhoneNum())?request.getPhoneNum():needUpdateUser.getPhoneNum());
         needUpdateUser.setGender(request.getGender());
+
     }
 
     @Override

@@ -90,22 +90,14 @@ public class UserService{ //Xử lý business logic
                 -> new RuntimeException("User not found"));
 
         String oldPass = needUpdateUser.getPassword();
-        String newPass = objUpdateRequest.getPassword();
-
-
+        String newPass = !Objects.isNull(objUpdateRequest.getPassword())? objUpdateRequest.getPassword() : oldPass;
 
         userMapper.updateUser(needUpdateUser,objUpdateRequest);
 
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
-        needUpdateUser.setPassword(passwordEncoder.encode(newPass));
-
-//        needUpdateUser.setPassword(objUpdateRequest.getPassword());
-//        needUpdateUser.setFirstname(objUpdateRequest.getFirstname());
-//        needUpdateUser.setLastname(objUpdateRequest.getLastname());
-//        needUpdateUser.setDob(objUpdateRequest.getDob());
-//        needUpdateUser.setEmail(objUpdateRequest.getEmail());
-//        needUpdateUser.setCity(objUpdateRequest.getCity());
-//        needUpdateUser.setPhoneNum(objUpdateRequest.getPhoneNum());
+        if(!oldPass.equals(newPass)){
+            PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+            needUpdateUser.setPassword(passwordEncoder.encode(newPass));
+        }
 
         userRepository.save(needUpdateUser); //UPDATE user mới
 

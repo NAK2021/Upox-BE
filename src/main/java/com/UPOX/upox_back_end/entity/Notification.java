@@ -18,11 +18,11 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.UUID)
     String notiId;
 
-    //Attribute
-    LocalDateTime dateSend;
-    String noti_content;
-    String heading;
-    String type;
+    //Attribute - Thông tin cần hứng trên FE
+    LocalDateTime dateSend; //ngày giờ gửi
+    String noti_content; //nội dung
+    String heading; //header
+    String type; //UNREAD và READ
 
     //Foreign Key
     //Many to One với User

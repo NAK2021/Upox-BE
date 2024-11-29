@@ -2,6 +2,7 @@ package com.UPOX.upox_back_end.service;
 
 import com.UPOX.upox_back_end.dto.request.FirebaseTokenCreateRequest;
 import com.UPOX.upox_back_end.dto.request.NotificationRequest;
+import com.UPOX.upox_back_end.dto.response.NotificationResponse;
 import com.UPOX.upox_back_end.entity.*;
 import com.UPOX.upox_back_end.enums.NotificationBodyE;
 import com.UPOX.upox_back_end.enums.NotificationHeaderE;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -204,7 +206,7 @@ public class NotificationService {
                 .setApnsConfig(apnsConfig).setAndroidConfig(androidConfig).setNotification(notification);
     }
 
-    public List<com.UPOX.upox_back_end.entity.Notification> getNotifications(String username){
+    public List<NotificationResponse> getNotifications(String username){
         try{
             var currentUser = userRepository.findByUsername(username);
             assert currentUser.isPresent();
@@ -213,7 +215,9 @@ public class NotificationService {
 
             updateNotificationType(notifications);
 
-            return notifications;
+            List<NotificationResponse> listNotificationResponse = toNotificationResponse(notifications);
+
+            return listNotificationResponse;
 
         }catch (Exception e){
             e.printStackTrace();
@@ -228,6 +232,18 @@ public class NotificationService {
                 notificationRepository.save(notification);
             }
         }
+    }
+    private List<NotificationResponse> toNotificationResponse(List<com.UPOX.upox_back_end.entity.Notification> notifications){
+        List<NotificationResponse> listResponse = new ArrayList<>();
 
+        for (var notification:notifications) {
+            listResponse.add(NotificationResponse.builder()
+                    .dateSend(notification.getDateSend())
+                    .heading(notification.getHeading())
+                    .noti_content(notification.getNoti_content())
+                    .type(notification.getType())
+                    .build());
+        }
+        return  listResponse;
     }
 }

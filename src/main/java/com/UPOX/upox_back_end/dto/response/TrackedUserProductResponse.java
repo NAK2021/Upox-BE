@@ -27,7 +27,7 @@ public class TrackedUserProductResponse {
     int peopleUse;
     String frequency;
     String wayPreserve;
-    boolean isOpened;
+    boolean isOpened; //False
     String imagePath;
 
     //Assume that we only manage 1 in-use product at a time

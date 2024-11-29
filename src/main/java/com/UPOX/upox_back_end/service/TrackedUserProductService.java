@@ -186,6 +186,8 @@ public class TrackedUserProductService {
             trackedUserProductRepository.save(needUpdatedTrackedProduct.get());
             trackedUserProductRepository.flush();
 
+            return trackedProducMapper.toTrackedUserProductResponse(needUpdatedTrackedProduct.get());
+
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -691,10 +693,29 @@ public class TrackedUserProductService {
         }
     }
 
+    private void sortExpiredDate(List<TrackedUserProduct> list){
+        list.sort((obj1, obj2) -> {
+            TrackedUserProduct trackedUserProduct1 = (TrackedUserProduct) obj1;
+            TrackedUserProduct trackedUserProduct2 = (TrackedUserProduct) obj2;
+            if (trackedUserProduct1.getExpiryDate().isBefore(trackedUserProduct2.getExpiryDate())) return -1;
+            if (trackedUserProduct1.getExpiryDate().isAfter(trackedUserProduct2.getExpiryDate())) return 1;
+            return 0;
+        });
+    }
 
     private List<TrackedUserProduct> getTrackedProductByProductId(String productId, List<TrackedUserProduct> myProductList){
-        return myProductList.stream().filter(trackedUserProduct -> trackedUserProduct.getProduct().getId().equals(productId))
+         List<TrackedUserProduct> productList = myProductList.stream().filter(trackedUserProduct -> trackedUserProduct.getProduct().getId().equals(productId))
                 .toList();
+
+        return productList;
+    }
+
+    public List<TrackedUserProductResponse> toTrackedUserProductResponse(List<TrackedUserProduct> myProductList){
+        List<TrackedUserProductResponse> responseList = new ArrayList<>();
+        for (var product:myProductList) {
+            responseList.add(trackedProducMapper.toTrackedUserProductResponse(product));
+        }
+        return responseList;
     }
 
     //Inventory
@@ -707,19 +728,7 @@ public class TrackedUserProductService {
         System.out.println(userProducts);
 
         //Sort by ExpiredDate
-        userProducts.sort((obj1, obj2) -> {
-            TrackedUserProduct trackedUserProduct1 = (TrackedUserProduct) obj1;
-            TrackedUserProduct trackedUserProduct2 = (TrackedUserProduct) obj2;
-//            String statusProductName1 = trackedUserProduct1.getStatus().getStatusProductName();
-//            String statusProductName2 = trackedUserProduct2.getStatus().getStatusProductName();
-//
-//            StatusE statusProduct1 = StatusE.valueOf(statusProductName1);
-//            StatusE statusProduct2 = StatusE.valueOf(statusProductName2);
-
-            if (trackedUserProduct1.getExpiryDate().isBefore(trackedUserProduct2.getExpiryDate())) return -1;
-            if (trackedUserProduct1.getExpiryDate().isAfter(trackedUserProduct2.getExpiryDate())) return 1;
-            return 0;
-        });
+        sortExpiredDate(userProducts);
 
         System.out.println(userProducts);
 
@@ -752,9 +761,10 @@ public class TrackedUserProductService {
     }
 
     //Chưa code
-    public List<TrackedUserProduct> getWithConditionInventory(String username, String categories, String status, String lateness
+    public List<TrackedUserProductResponse> getWithConditionInventory(String username, String categories, String status, String lateness
         , String searchValue, String sortBy, boolean isAscending){
         List<TrackedUserProduct> initialInventory = new ArrayList<>();
+
 
         //Nếu không có category hoặc sản phẩm nào cụ thể, lấy initial product list
         if(searchValue.isEmpty() && categories.isEmpty()){
@@ -763,11 +773,11 @@ public class TrackedUserProductService {
         //Search
         //Chọn category mới
         //--> Tìm product theo đó
-        else if(!searchValue.isEmpty()){
+        else if(!searchValue.isEmpty()){ //Search
             initialInventory = getUserProductList(username).stream()
                     .filter(trackedUserProduct -> trackedUserProduct.getProduct().getProductName().contains(searchValue))
                     .toList();
-            return initialInventory;
+            return toTrackedUserProductResponse(initialInventory);
         }
         else { //categories true
             //categories = "name-name-name-name" limit (5 categories picking)
@@ -857,9 +867,7 @@ public class TrackedUserProductService {
             }
         }
 
-
-
-        return initialInventory;
+        return toTrackedUserProductResponse(initialInventory);
     }
 
     //Calendar
@@ -962,14 +970,14 @@ public class TrackedUserProductService {
 
             if(checkedMonth == month && checkedYear == year){
                 calendarProducts.add(TrackedCalendarProduct.builder()
-                        .trackedUserProduct(userProduct)
+                        .trackedUserProduct(trackedProducMapper.toTrackedUserProductResponse(userProduct))
                         .dateDisplay(safeDate.minusDays(days))
                         .build());
             }
         }
         if(expiredDate.getMonthValue() == month && expiredDate.getYear() == year){ //Sản phẩm hết hạn (hiếm)
             calendarProducts.add(TrackedCalendarProduct.builder()
-                    .trackedUserProduct(userProduct)
+                    .trackedUserProduct(trackedProducMapper.toTrackedUserProductResponse(userProduct))
                     .dateDisplay(expiredDate)
                     .build());
         }
@@ -979,7 +987,7 @@ public class TrackedUserProductService {
 
 
     //Expense
-    public void getExpense(String username, int month, int year){
+    public ExpenseResponse getExpense(String username, int month, int year){
         try{
             var currentUser = userRepository.findByUsername(username);
             assert currentUser.orElse(null) != null;
@@ -1005,13 +1013,18 @@ public class TrackedUserProductService {
                 int costOfCategory = mapCalculatedCategory.get(categoryName) == null ? 0
                         : mapCalculatedCategory.get(categoryName);
 
-                mapCalculatedCategory.put(categoryName,costOfCategory + userProduct.getCost());
+                mapCalculatedCategory.put(categoryName,costOfCategory + userProduct.getCost()); // {Tên category: Tiền đã chi}
             }
 
+            return ExpenseResponse.builder()
+                    .categorizedExpense(mapCalculatedCategory)
+                    .limit(calculatedExpense.getExpenseLimit())
+                    .totSpent(totExpense)
+                    .build();
         }catch (Exception e){
             e.printStackTrace();
         }
-
+        return null;
     }
 
     public void readJsonString(){
@@ -1048,8 +1061,9 @@ public class TrackedUserProductService {
                 currentCategory = checkedCategory;
                 //add vào list
                 warningCategories.add(WarningCategory.builder()
-                        .category(trackedProduct.getProduct().getCategory())
-                        .status(trackedProduct.getStatus())
+                        .categoryName(trackedProduct.getProduct().getCategory().getCategoryName())
+                        .imagePath(trackedProduct.getProduct().getCategory().getImagePath())
+                        .statusName(trackedProduct.getStatus().getStatusProductName())
                         .build());
                 count++;
                 if(count == limitCategories){

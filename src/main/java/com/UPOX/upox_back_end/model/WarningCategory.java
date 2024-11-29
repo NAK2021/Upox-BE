@@ -11,6 +11,7 @@ import lombok.experimental.FieldDefaults;
 @Builder //Tạo ra 1 builder class cho một DTO
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class WarningCategory {
-    Category category;
-    Status status;
+    String categoryName;
+    String imagePath;
+    String statusName;
 }
