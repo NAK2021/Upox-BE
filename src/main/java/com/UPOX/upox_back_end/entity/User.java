@@ -63,6 +63,9 @@ public class User {
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
     List<FirebaseToken> firebaseTokens;
 
+    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
+    List<GoogleToken> googleTokens;
+
 
     //Xoá
 //    public void addTrackedUserProduct(TrackedUserProduct trackedUserProduct){

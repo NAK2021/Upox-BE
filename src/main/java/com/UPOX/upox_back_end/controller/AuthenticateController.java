@@ -7,6 +7,7 @@ import com.UPOX.upox_back_end.exception.ErrorCode;
 import com.UPOX.upox_back_end.model.Otp;
 import com.UPOX.upox_back_end.service.AuthenticateService;
 import com.UPOX.upox_back_end.service.UserService;
+import com.google.protobuf.Api;
 import com.nimbusds.jose.JOSEException;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -15,6 +16,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.web.bind.annotation.*;
@@ -127,13 +129,23 @@ public class AuthenticateController {
         return apiResponse;
     }
 
-    @PostMapping("/google-login")
-    ApiResponse<GoogleUserResponse> googleLogin(@RequestBody GoogleLoginRequest googleLoginRequest) throws GeneralSecurityException, IOException {
-        var result = authenticateService.googleLogin(googleLoginRequest);
+    @PostMapping("/google-signUp")
+    ApiResponse<GoogleUserResponse> googleSignUp(@RequestBody GoogleLoginRequest googleSignUpRequest) throws GeneralSecurityException, IOException {
+        var result = authenticateService.googleSignUp(googleSignUpRequest);
         ApiResponse<GoogleUserResponse> apiResponse = new ApiResponse<>();
         apiResponse.setResult(result);
 
         return apiResponse;
     }
 
+    @PostMapping("/google-login")
+    ApiResponse<AuthenticateResponse> googleLogin(@RequestBody GoogleLoginRequest googleLoginRequest){
+
+        var res = authenticateService.googleLogin(googleLoginRequest);
+
+        ApiResponse<AuthenticateResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(res);
+
+        return apiResponse;
+    }
 }

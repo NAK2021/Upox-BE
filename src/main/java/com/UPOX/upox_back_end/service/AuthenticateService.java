@@ -5,6 +5,7 @@ import com.UPOX.upox_back_end.dto.response.AuthenticateResponse;
 import com.UPOX.upox_back_end.dto.response.GoogleUserResponse;
 import com.UPOX.upox_back_end.dto.response.IntrospectResponse;
 import com.UPOX.upox_back_end.dto.response.UserResponse;
+import com.UPOX.upox_back_end.entity.GoogleToken;
 import com.UPOX.upox_back_end.entity.InvalidateToken;
 import com.UPOX.upox_back_end.entity.User;
 import com.UPOX.upox_back_end.enums.Role;
@@ -12,6 +13,7 @@ import com.UPOX.upox_back_end.exception.ErrorCode;
 import com.UPOX.upox_back_end.model.EmailForm;
 import com.UPOX.upox_back_end.model.Mapper;
 import com.UPOX.upox_back_end.model.Otp;
+import com.UPOX.upox_back_end.repository.GoogleTokenRepository;
 import com.UPOX.upox_back_end.repository.InvalidateTokenRepository;
 import com.UPOX.upox_back_end.repository.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.antlr.v4.runtime.Token;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -73,6 +76,8 @@ public class AuthenticateService {
     private TemplateEngine templateEngine;
     @Autowired
     private InvalidateTokenRepository invalidateTokenRepository;
+    @Autowired
+    private GoogleTokenRepository googleTokenRepository;
 
 
     @NonFinal //Secret key để generate signature
@@ -360,7 +365,7 @@ public class AuthenticateService {
     }
 
     private Mapper userMapper = new Mapper();
-    public GoogleUserResponse googleLogin(GoogleLoginRequest request) throws GeneralSecurityException, IOException {
+    public GoogleUserResponse googleSignUp(GoogleLoginRequest request) throws GeneralSecurityException, IOException {
         String email = request.getEmail();
         boolean emailVerified = request.isVerified();
         String name = request.getUsername();
@@ -368,6 +373,7 @@ public class AuthenticateService {
         String locale = request.getLocale();
         String familyName = request.getFamilyName();
         String givenName = request.getGivenName();
+        String googleTokenRequest = request.getGoogleToken();
 
         //Basic info
         User newUser = new User();
@@ -378,14 +384,26 @@ public class AuthenticateService {
         newUser.setActivated(true);
         newUser.setGoogleLogin(true);
 
-
+        //Google Token
+        GoogleToken googleToken = GoogleToken.builder()
+                .token(googleTokenRequest)
+                .build();
 
         //Role
         HashSet<String> roles = new HashSet<>(); //Tạo thành một Set
         roles.add(Role.USER.name());
         newUser.setRoles(roles);
 
+        //User
         userRepository.save(newUser);
+        userRepository.flush();
+
+        googleToken.setUser(newUser);
+
+        //Google Token
+        googleTokenRepository.save(googleToken);
+        googleTokenRepository.flush();
+
 
         UserResponse userResponse = userMapper.toUserResponse(newUser);
 
@@ -401,6 +419,26 @@ public class AuthenticateService {
                 .userResponse(userResponse)
                 .authenticateResponse(authenticationResponse)
                 .build();
+    }
+
+    public AuthenticateResponse googleLogin(GoogleLoginRequest request){
+        try{
+            String token = request.getGoogleToken();
+            GoogleToken googleToken = googleTokenRepository.findByToken(token);
+
+            var accessToken = generateToken(googleToken.getUser(),false);
+            var refreshToken = generateToken(googleToken.getUser(), true);
+
+            return AuthenticateResponse.builder()
+                    .authenticated(true)
+                    .token(accessToken)
+                    .refreshToken(refreshToken)
+                    .build();
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
 //    private void googleVerify(String idTokenString) throws GeneralSecurityException, IOException {
