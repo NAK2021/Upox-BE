@@ -13,12 +13,12 @@ public class ScheduledTasks {
     @Autowired
     TrackedUserProductService trackedUserProductService;
 
-    @Scheduled(cron = "0 0 0 1 1-12 ?")
+    @Scheduled(cron = "0 0 0 1 * ?")
     public void createMonthlyExpense(){
         trackedUserProductService.updateMonthlyExpense();
     }
 
-    @Scheduled(cron = "0 0 0 ? * *")
+    @Scheduled(cron = "0 0 0 * * ?")
     public void updateDailyProductStatus(){
         trackedUserProductService.updateDailyProductStatus();
     }

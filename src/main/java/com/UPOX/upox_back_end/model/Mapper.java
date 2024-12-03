@@ -156,7 +156,7 @@ public class Mapper implements MappingInterface {
 
         TrackedUserProduct newTrackedUserProduct = TrackedUserProduct.builder()
                 //Set relationship
-                .product(product)
+                .product(product) //productName
                 .transaction(transaction)
                 .status(status)
                 //Attributes
