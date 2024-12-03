@@ -9,6 +9,7 @@ import lombok.experimental.FieldDefaults;
 @Builder //Tạo ra 1 builder class cho một DTO
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class GoogleLoginRequest {
+    String userId;
     String username;
     String email;
     String familyName;

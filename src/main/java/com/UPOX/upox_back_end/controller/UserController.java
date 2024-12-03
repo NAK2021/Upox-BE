@@ -5,6 +5,7 @@ import com.UPOX.upox_back_end.dto.request.UserCreationRequest;
 import com.UPOX.upox_back_end.dto.request.UserUpdateRequest;
 import com.UPOX.upox_back_end.dto.response.UserResponse;
 import com.UPOX.upox_back_end.entity.User;
+import com.UPOX.upox_back_end.service.TrackedUserProductService;
 import com.UPOX.upox_back_end.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -21,7 +22,11 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserController {
 
-    UserService userService;
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private TrackedUserProductService trackedUserProductService;
 
     //Đăng ký
     @PostMapping
@@ -30,7 +35,9 @@ public class UserController {
 
         //Bọc kết quả trả về vào trong API response theo 1 chuẩn cụ thể
         ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(userService.createRequest(objRequest));
+        var res = userService.createRequest(objRequest);
+        trackedUserProductService.createExpense(res.getUsername());
+        apiResponse.setResult(res);
         return apiResponse;
     }
 

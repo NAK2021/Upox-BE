@@ -29,6 +29,7 @@ public class TrackedUserProductResponse {
     String wayPreserve;
     boolean isOpened; //False
     String imagePath;
+    String categoryImagePath;
 
     //Assume that we only manage 1 in-use product at a time
     TrackedUserProductOpened trackedUserProductOpened;

@@ -348,8 +348,9 @@ public class AuthenticateService {
         String refreshToken = request.getRefreshToken();
 
         SignedJWT signedRefreshJWT = verifyToken(refreshToken);
-        String userName = signedRefreshJWT.getJWTClaimsSet().getSubject();
-        User user = userRepository.findByUsername(userName).orElseThrow(
+        String userId = signedRefreshJWT.getJWTClaimsSet().getStringClaim("userId");
+
+        User user = userRepository.findById(userId).orElseThrow(
                 () -> new RuntimeException(ErrorCode.USER_NOT_EXISTED.getMessage()));
 
         String newAccessToken = generateToken(user,false);
@@ -423,18 +424,25 @@ public class AuthenticateService {
 
     public AuthenticateResponse googleLogin(GoogleLoginRequest request){
         try{
-            String token = request.getGoogleToken();
-            GoogleToken googleToken = googleTokenRepository.findByToken(token);
+            String userId = request.getUserId();
+            var currentUser = userRepository.findById(userId); //Có user này tồn tại
+            assert currentUser.orElse(null) != null;
 
-            var accessToken = generateToken(googleToken.getUser(),false);
-            var refreshToken = generateToken(googleToken.getUser(), true);
+            if(currentUser.get().isGoogleLogin()){ //User này là google user
+                String token = request.getGoogleToken();
+                GoogleToken googleToken = currentUser.get().getGoogleTokens().get(0);
+                googleToken.setToken(token);
+                googleTokenRepository.save(googleToken);
+                googleTokenRepository.flush();
 
-            return AuthenticateResponse.builder()
-                    .authenticated(true)
-                    .token(accessToken)
-                    .refreshToken(refreshToken)
-                    .build();
-
+                var accessToken = generateToken(googleToken.getUser(),false);
+                var refreshToken = generateToken(googleToken.getUser(), true);
+                return AuthenticateResponse.builder()
+                        .authenticated(true)
+                        .token(accessToken)
+                        .refreshToken(refreshToken)
+                        .build();
+            }
         }catch (Exception e){
             e.printStackTrace();
         }

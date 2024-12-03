@@ -16,4 +16,5 @@ public class ProductResponse {
     String defVolume;
     String defExpiryDate;
     String defPreserveWay;
+    String imagePath;
 }

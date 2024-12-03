@@ -213,6 +213,7 @@ public class Mapper implements MappingInterface {
                 .wayPreserve(trackedUserProduct.getWayPreserve())
                 .isOpened(trackedUserProduct.isOpened())
                 .imagePath(trackedUserProduct.getProduct().getImagePath())
+                .categoryImagePath(trackedUserProduct.getProduct().getCategory().getImagePath())
                 .build();
 
         if(trackedUserProduct.isOpened()){

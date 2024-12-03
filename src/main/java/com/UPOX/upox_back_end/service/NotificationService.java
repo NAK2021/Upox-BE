@@ -226,23 +226,27 @@ public class NotificationService {
     }
 
     private void updateNotificationType(List<com.UPOX.upox_back_end.entity.Notification> notifications){
-        for (var notification:notifications) {
-            if(notification.getType().equals("UNREAD")){
-                notification.setType("READ");
-                notificationRepository.save(notification);
+        if (notifications.size() > 0){
+            for (var notification:notifications) {
+                if(notification.getType().equals("UNREAD")){
+                    notification.setType("READ");
+                    notificationRepository.save(notification);
+                }
             }
         }
     }
     private List<NotificationResponse> toNotificationResponse(List<com.UPOX.upox_back_end.entity.Notification> notifications){
         List<NotificationResponse> listResponse = new ArrayList<>();
 
-        for (var notification:notifications) {
-            listResponse.add(NotificationResponse.builder()
-                    .dateSend(notification.getDateSend())
-                    .heading(notification.getHeading())
-                    .noti_content(notification.getNoti_content())
-                    .type(notification.getType())
-                    .build());
+        if(notifications.size() > 0){
+            for (var notification:notifications) {
+                listResponse.add(NotificationResponse.builder()
+                        .dateSend(notification.getDateSend())
+                        .heading(notification.getHeading())
+                        .noti_content(notification.getNoti_content())
+                        .type(notification.getType())
+                        .build());
+            }
         }
         return  listResponse;
     }

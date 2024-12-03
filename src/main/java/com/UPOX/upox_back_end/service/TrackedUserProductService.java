@@ -138,6 +138,7 @@ public class TrackedUserProductService {
                 .defCost(foundProduct.getDefCost())
                 .defExpiryDate(foundProduct.getDefExpiryDate())
                 .defVolume(foundProduct.getDefVolume())
+                .imagePath(foundProduct.getImagePath())
                 .build();
     }
 
@@ -427,14 +428,18 @@ public class TrackedUserProductService {
         List<Expense> userExpenses = new ArrayList<>(currentUser.get().getExpenses());
 
         //Take all transactions
-        for (var expense: userExpenses) {
-            userTransactions.addAll(expense.getTransactions());
+        if(userExpenses.size() > 0){
+            for (var expense: userExpenses) {
+                userTransactions.addAll(expense.getTransactions());
+            }
+            if(userTransactions.size() > 0){
+                //Take all tracked-user products
+                for (var transaction: userTransactions) {
+                    userProducts.addAll(transaction.getTrackedUserProducts());
+                }
+            }
         }
 
-        //Take all tracked-user products
-        for (var transaction: userTransactions) {
-            userProducts.addAll(transaction.getTrackedUserProducts());
-        }
         return userProducts;
     }
 
@@ -1008,7 +1013,8 @@ public class TrackedUserProductService {
             Map<String, Integer> mapCalculatedCategory = new HashMap<>();
 
             for(var userProduct:userProducts){
-                String categoryName = userProduct.getProduct().getCategory().getCategoryName();
+                String categoryName = userProduct.getProduct().getCategory().getCategoryName() + "-"
+                        + userProduct.getProduct().getCategory().getImagePath();
 
                 int costOfCategory = mapCalculatedCategory.get(categoryName) == null ? 0
                         : mapCalculatedCategory.get(categoryName);
@@ -1054,28 +1060,28 @@ public class TrackedUserProductService {
         List<TrackedUserProduct> userProducts = getUserProductList(username);
         List<WarningCategory> warningCategories = new ArrayList<>();
 
-        for (var trackedProduct : userProducts) {
-            String checkedCategory = trackedProduct.getProduct().getCategory().getCategoryName();
-            if(!currentCategory.equals(checkedCategory)){
-                if(!trackedProduct.getStatus().getStatusProductName().equals(StatusE.NORMAL.name())){
-                    //change current category
-                    currentCategory = checkedCategory;
-                    //add vào list
-                    warningCategories.add(WarningCategory.builder()
-                            .categoryName(trackedProduct.getProduct().getCategory().getCategoryName())
-                            .imagePath(trackedProduct.getProduct().getCategory().getImagePath())
-                            .statusName(trackedProduct.getStatus().getStatusProductName())
-                            .build());
-                    count++;
-                    if(count == limitCategories){
-                        return warningCategories;
+        if(userProducts.size() > 0){
+            for (var trackedProduct : userProducts) {
+                String checkedCategory = trackedProduct.getProduct().getCategory().getCategoryName();
+                if(!currentCategory.equals(checkedCategory)){
+                    if(!trackedProduct.getStatus().getStatusProductName().equals(StatusE.NORMAL.name())){
+                        //change current category
+                        currentCategory = checkedCategory;
+                        //add vào list
+                        warningCategories.add(WarningCategory.builder()
+                                .categoryName(trackedProduct.getProduct().getCategory().getCategoryName())
+                                .imagePath(trackedProduct.getProduct().getCategory().getImagePath())
+                                .statusName(trackedProduct.getStatus().getStatusProductName())
+                                .build());
+                        count++;
+                        if(count == limitCategories){
+                            return warningCategories;
+                        }
                     }
                 }
-
             }
         }
         return warningCategories;
-
     }
 
 
