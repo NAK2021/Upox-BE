@@ -92,11 +92,18 @@ public class TrackedUserProductService {
 
 
             //Lấy 2 tháng expense gần nhất
-            Expense expenseCurrentMonth = listHistoryExpense.get(0);
-            Expense expensePreviousMonth = listHistoryExpense.get(1);
+            Expense expenseCurrentMonth = listHistoryExpense.size() > 0 ? listHistoryExpense.get(0) : null;
+            Expense expensePreviousMonth = listHistoryExpense.size() > 1 ? listHistoryExpense.get(1) : null;
 
-            List<Transaction> transactionCurrentMonth = expenseCurrentMonth.getTransactions();
-            List<Transaction> transactionPreviousMonth = expensePreviousMonth.getTransactions();
+//            assert expenseCurrentMonth != null;
+//            assert expensePreviousMonth != null;
+
+            List<Transaction> transactionCurrentMonth = expenseCurrentMonth != null ?
+                    expenseCurrentMonth.getTransactions() : new ArrayList<>();
+
+
+            List<Transaction> transactionPreviousMonth = expensePreviousMonth != null ?
+                    expensePreviousMonth.getTransactions() : new ArrayList<>();
 
             //Xét các products trong các transactions của tháng đầu tiên
             Set<String> historyProductList = new HashSet<>();
@@ -125,7 +132,10 @@ public class TrackedUserProductService {
         Product foundProduct = new Product();
         for (var product : listDefProduct) {
             log.info(product.getProductName());
-            if (request.getProductName().contains(product.getProductName())) {
+            String defProductName = product.getProductName().toUpperCase(Locale.ROOT);
+            String addProductName = request.getProductName().toUpperCase(Locale.ROOT);
+
+            if (addProductName.contains(defProductName)) {
                 foundProduct = product;
                 break;
             }
@@ -579,7 +589,7 @@ public class TrackedUserProductService {
 
 
             assert currentUser.orElse(null) != null;
-            List<Expense> userExpenses = currentUser.get().getExpenses();
+            List<Expense> userExpenses = currentUser.get().getExpenses() == null? new ArrayList<>() : currentUser.get().getExpenses();
             Expense previousExpense = userExpenses.size() > 0 ? userExpenses.get(0) : null;
 
 
@@ -591,16 +601,20 @@ public class TrackedUserProductService {
                     .user(currentUser.orElse(null))
                     .build();
 
-            expenseRepository.save(newExpense);
-            expenseRepository.flush();
+            userExpenses.add(newExpense);
 
-            currentUser.get().getExpenses().sort((obj1, obj2) -> {
+            userExpenses.sort((obj1, obj2) -> {
                 Expense expense1 = (Expense) obj1;
                 Expense expense2 = (Expense) obj2;
                 if (expense1.getDateUpdateLimit().isBefore(expense2.getDateUpdateLimit())) return -1;
                 if (expense1.getDateUpdateLimit().isAfter(expense2.getDateUpdateLimit())) return 1;
                 return 0;
             });
+
+            currentUser.get().setExpenses(userExpenses);
+
+            expenseRepository.save(newExpense);
+            expenseRepository.flush();
 
 
         }catch (Exception e){
@@ -1016,6 +1030,8 @@ public class TrackedUserProductService {
                 String categoryName = userProduct.getProduct().getCategory().getCategoryName() + "-"
                         + userProduct.getProduct().getCategory().getImagePath();
 
+
+
                 int costOfCategory = mapCalculatedCategory.get(categoryName) == null ? 0
                         : mapCalculatedCategory.get(categoryName);
 
@@ -1023,9 +1039,12 @@ public class TrackedUserProductService {
             }
 
             return ExpenseResponse.builder()
-                    .categorizedExpense(mapCalculatedCategory)
-                    .limit(calculatedExpense.getExpenseLimit())
-                    .totSpent(totExpense)
+                    .categorizedExpense(mapCalculatedCategory) //Map<tên category, tiền đã chi>: tên category: categoryName-imagePath
+                                                                //List<String>cate = categoryName.split("-");
+                                                                //cate[0]: tên
+                                                                //cate[1]: imagePath
+                    .limit(calculatedExpense.getExpenseLimit()) //Định mức
+                    .totSpent(totExpense) //Tổng tiền chi
                     .build();
         }catch (Exception e){
             e.printStackTrace();
