@@ -175,6 +175,9 @@ public class AuthenticateService {
         var user =  userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException(ErrorCode.USER_NOT_EXISTED.getMessage()));
 
+        if(!user.isActivated()){
+            return null;
+        }
 
         //Xét password có trùng nhau không
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);

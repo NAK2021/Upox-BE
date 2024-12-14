@@ -53,6 +53,7 @@ public class NotificationService {
     @Autowired
     NotificationRepository notificationRepository;
 
+
     public void processProductMessage(List<TrackedUserProduct>  productsNeededToNotify) throws ExecutionException, InterruptedException {
         for (var product : productsNeededToNotify) {
             //Lấy Firebase token
@@ -71,14 +72,20 @@ public class NotificationService {
             var toUser = userRepository.findByUsername(userName);
             assert toUser.isPresent();
 
-            if(isSpendTooMuch(toUser.get())){ //Nếu xài quá tay
-                String firebaseToken = toUser.get().getFirebaseTokens().get(0).getToken();
-                sendMessageToToken(NotificationRequest.builder()
-                        .token(firebaseToken)
-                        .title(NotificationHeaderE.SPEND_TOO_MUCH.getTitle())
-                        .body(NotificationBodyE.SPEND_TOO_MUCH.getContent())
-                        .build());
-            }
+            String firebaseToken = toUser.get().getFirebaseTokens().get(0).getToken();
+            sendMessageToToken(NotificationRequest.builder()
+                    .token(firebaseToken)
+                    .title(NotificationHeaderE.SPEND_TOO_MUCH.getTitle())
+                    .body(NotificationBodyE.SPEND_TOO_MUCH.getContent())
+                    .build());
+//            if(isSpendTooMuch(toUser.get())){ //Nếu xài quá tay
+//                String firebaseToken = toUser.get().getFirebaseTokens().get(0).getToken();
+//                sendMessageToToken(NotificationRequest.builder()
+//                        .token(firebaseToken)
+//                        .title(NotificationHeaderE.SPEND_TOO_MUCH.getTitle())
+//                        .body(NotificationBodyE.SPEND_TOO_MUCH.getContent())
+//                        .build());
+//            }
         }catch (Exception e){
             e.printStackTrace();
         }

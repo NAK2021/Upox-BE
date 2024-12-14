@@ -24,7 +24,7 @@ public class TrackedUserProductRequest { //1 List các sản phẩm cần thêm
 
 
     //Opened
-    String isOpened;
+    boolean opened;
     String dateOpen;
 
 

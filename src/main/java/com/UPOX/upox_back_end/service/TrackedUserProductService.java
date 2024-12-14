@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.chrono.ChronoLocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -164,6 +165,7 @@ public class TrackedUserProductService {
                     new TrackedUserProductID(foundTransaction.get(),foundProduct.get()));
 
             assert needUpdatedTrackedProduct.orElse(null) != null;
+
             return needUpdatedTrackedProduct;
         }catch (Exception e){
             e.printStackTrace();
@@ -177,16 +179,25 @@ public class TrackedUserProductService {
         try{
 
             var needUpdatedTrackedProduct = findUserProduct(productId,transactionId);
-            assert needUpdatedTrackedProduct.orElse(null) != null;
 
-            int afterFinishing_ProductQuantity = needUpdatedTrackedProduct.get().getQuantity() - 1;
-            int afterFinishing_ProductNumberOpened = needUpdatedTrackedProduct.get().getNumProductOpened() - 1; // = 0
+            assert needUpdatedTrackedProduct.orElse(null) != null;
+            var product = needUpdatedTrackedProduct.get().getProduct();
+            int afterFinishing_ProductNumberOpened = needUpdatedTrackedProduct.get().getNumProductOpened();
+
+
             int afterFinishing_VolumeLeft = 0;
             boolean afterFinishing_IsOpen = false;
             String afterFinishing_ProductInUse = "";
 
+//            if(isKeepUsing){
+//                afterFinishing_VolumeLeft = needUpdatedTrackedProduct.get().getVolume();
+//                afterFinishing_IsOpen = true;
+//                trackedProducMapper.initializeProductInUse(needUpdatedTrackedProduct.get(),product);
+//                afterFinishing_ProductNumberOpened = needUpdatedTrackedProduct.get().getNumProductOpened();
+//                afterFinishing_ProductInUse = needUpdatedTrackedProduct.get().getProductsInUse();
+//            }
 
-            needUpdatedTrackedProduct.get().setQuantity(afterFinishing_ProductQuantity);
+//            needUpdatedTrackedProduct.get().setQuantity(afterFinishing_ProductQuantity);
             needUpdatedTrackedProduct.get().setNumProductOpened(afterFinishing_ProductNumberOpened);
             needUpdatedTrackedProduct.get().setVolumeLeft(afterFinishing_VolumeLeft);
             needUpdatedTrackedProduct.get().setOpened(afterFinishing_IsOpen);
@@ -213,10 +224,16 @@ public class TrackedUserProductService {
             assert deletedProduct.orElse(null) != null;
             assert deletedTransaction.orElse(null) != null;
 
-            trackedUserProductRepository.deleteById(new TrackedUserProductID(deletedTransaction.get(),deletedProduct.get()));
-            trackedUserProductRepository.flush();
+            var trackedUserProduct = findUserProduct(productId,transactionId);
+
+            assert trackedUserProduct.orElse(null) != null;
+
+            trackedUserProductRepository.deleteByIds(productId,transactionId);
+//            trackedUserProductRepository.deleteById(new TrackedUserProductID(deletedTransaction.get(),deletedProduct.get()));
+//            trackedUserProductRepository.flush();
         }catch (Exception e){
             e.printStackTrace();
+            return ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage();
         }
         return "Deleted Successfully";
     }
@@ -229,11 +246,12 @@ public class TrackedUserProductService {
             assert needUpdatedTrackedProduct.orElse(null) != null;
 
             trackedProducMapper.updateTrackedUserProduct(needUpdatedTrackedProduct.get(),updateRequest);
+            TrackedUserProductResponse trackedUserProductResponse = trackedProducMapper.toTrackedUserProductResponse(needUpdatedTrackedProduct.get());
 
             trackedUserProductRepository.save(needUpdatedTrackedProduct.get());
             trackedUserProductRepository.flush();
 
-            return trackedProducMapper.toTrackedUserProductResponse(needUpdatedTrackedProduct.get());
+            return trackedUserProductResponse;
 
         }catch (Exception e){
             e.printStackTrace();
@@ -416,20 +434,39 @@ public class TrackedUserProductService {
 //        return res;
 //    }
 
-    public boolean isProductBeenUsing(String productId, String username){
+    public boolean isProductBeenUsing(String productName, String username){
         List<TrackedUserProduct> userProducts = getUserProductList(username);
         for (var product: userProducts) {
-            if(product.getProduct().getId().equals(productId) && product.isOpened()){
+            if(product.getProduct().getProductName().equals(productName) && product.isOpened()){
                 return true;
             }
         }
         return false;
     }
 
+    public TrackedUserProductListResponse getAllProductSameName(String productName, String username){
+        List<TrackedUserProduct> userProducts = getUserProductList(username).stream()
+                .filter(trackedUserProduct -> trackedUserProduct.getProduct().getProductName().equals(productName))
+                .toList();
+
+        sortExpiredDate(userProducts);
+        List<TrackedUserProductResponse> listResponse = new ArrayList<>();
+
+        userProducts.forEach(trackedUserProduct -> {
+            listResponse.add(trackedProducMapper.toTrackedUserProductResponse(trackedUserProduct));
+        });
+
+        return TrackedUserProductListResponse.builder()
+                .responseList(listResponse)
+                .build();
+
+    }
+
     private List<TrackedUserProduct> getUserProductList(String username){
 
         List<Transaction> userTransactions = new ArrayList<>();
         List<TrackedUserProduct> userProducts = new ArrayList<>();
+        List<Product> products = productRepository.findAll();
 
         //find user
         var currentUser = userRepository.findByUsername(username);
@@ -595,7 +632,7 @@ public class TrackedUserProductService {
 
 
             Expense newExpense = Expense.builder()
-                    .expenseLimit(1000000)
+                    .expenseLimit(previousExpense != null? previousExpense.getTotMoneySpent():0)
                     .dateUpdateLimit(LocalDateTime.now())
                     .totMoneySpent(0)
                     .user(currentUser.orElse(null))
@@ -679,11 +716,13 @@ public class TrackedUserProductService {
 
 
     private Status findStatus(LocalDateTime expiredDate, LocalDateTime safeDate, boolean isInUseProduct){
+        //Hiện tại chưa xử lý updateStatus cho productInUse
+
         LocalDate currentDate = LocalDate.now();
         Duration duration = Duration.between(currentDate,safeDate);
         long daysDifference = duration.toDays();
 
-        boolean isSpoilt = daysDifference < 0;
+        boolean isSpoilt = currentDate.isEqual(ChronoLocalDate.from(expiredDate));
         String statusName = calculateStatus(daysDifference, isSpoilt);
 
         var updatedStatus = statusRepository.findByStatusProductName(statusName);
@@ -713,13 +752,18 @@ public class TrackedUserProductService {
     }
 
     private void sortExpiredDate(List<TrackedUserProduct> list){
-        list.sort((obj1, obj2) -> {
-            TrackedUserProduct trackedUserProduct1 = (TrackedUserProduct) obj1;
-            TrackedUserProduct trackedUserProduct2 = (TrackedUserProduct) obj2;
-            if (trackedUserProduct1.getExpiryDate().isBefore(trackedUserProduct2.getExpiryDate())) return -1;
-            if (trackedUserProduct1.getExpiryDate().isAfter(trackedUserProduct2.getExpiryDate())) return 1;
-            return 0;
-        });
+        try{
+            list.sort((obj1, obj2) -> {
+                TrackedUserProduct trackedUserProduct1 = (TrackedUserProduct) obj1;
+                TrackedUserProduct trackedUserProduct2 = (TrackedUserProduct) obj2;
+                if (trackedUserProduct1.getExpiryDate().isBefore(trackedUserProduct2.getExpiryDate())) return -1;
+                if (trackedUserProduct1.getExpiryDate().isAfter(trackedUserProduct2.getExpiryDate())) return 1;
+                return 0;
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     private List<TrackedUserProduct> getTrackedProductByProductId(String productId, List<TrackedUserProduct> myProductList){
@@ -727,6 +771,18 @@ public class TrackedUserProductService {
                 .toList();
 
         return productList;
+    }
+
+    private void printOut(List<TrackedUserProduct> userProducts){
+        for (var product:userProducts) {
+            System.out.println(product.getProduct().getId() + " " + product.getProduct().getProductName() + ": " + product.getExpiryDate());
+        }
+    }
+
+    private void printOutMap(Map<String,Integer> mapProduct){
+        mapProduct.forEach((key, value) -> {
+            System.out.println("Product Id: " + key);
+        });
     }
 
     public List<TrackedUserProductResponse> toTrackedUserProductResponse(List<TrackedUserProduct> myProductList){
@@ -737,6 +793,22 @@ public class TrackedUserProductService {
         return responseList;
     }
 
+    //Suggestion Category
+    public Map<String, Integer> getSuggestionCategories(String username){
+
+        Map<String, Integer> suggestionCategories = new HashMap<>();
+
+        List<TrackedUserProduct> userProducts = getUserProductList(username);
+        for (var product : userProducts) {
+            String cateName = product.getProduct().getCategory().getCategoryName();
+            int count = suggestionCategories.get(cateName) == null ? 0
+                    : suggestionCategories.get(cateName);
+
+            suggestionCategories.put(cateName,count + 1);
+        }
+        return suggestionCategories;
+    }
+
     //Inventory
     public List<TrackedUserProduct> getInitialInventory(String username){
         int limitDisplayedCategory = 5;
@@ -744,15 +816,17 @@ public class TrackedUserProductService {
 
         List<TrackedUserProduct> userProducts = getUserProductList(username);
 
-        System.out.println(userProducts);
+        System.out.println("/n");
+        printOut(userProducts);
 
         //Sort by ExpiredDate
         sortExpiredDate(userProducts);
 
-        System.out.println(userProducts);
+        System.out.println("/n");
+        printOut(userProducts);
 
-        Map<String,Integer> mapCategory = new HashMap<>();//categoryId, số sản phẩm xuất hiện
-        Map<String,Integer> mapProduct = new HashMap<>(); //productId, số sản phẩm xuất hiện
+        Map<String,Integer> mapCategory = new LinkedHashMap<>();//categoryId, số sản phẩm xuất hiện
+        Map<String,Integer> mapProduct = new LinkedHashMap<>(); //productId, số sản phẩm xuất hiện
 
         List<TrackedUserProduct> mostEmergencyProduct = new ArrayList<>();
 
@@ -771,9 +845,14 @@ public class TrackedUserProductService {
             mapCategory.put(addedCategoryId,numberAddedCategories + 1);
         }
 
+        printOutMap(mapProduct);
+
         for (String productId : mapProduct.keySet()) {
             mostEmergencyProduct.addAll(getTrackedProductByProductId(productId,userProducts));
         }
+
+        System.out.println("/n");
+        printOut(mostEmergencyProduct);
 
         //Mapper to TrackedUserProductResponseList
         return mostEmergencyProduct;
@@ -784,21 +863,23 @@ public class TrackedUserProductService {
         , String searchValue, String sortBy, boolean isAscending){
         List<TrackedUserProduct> initialInventory = new ArrayList<>();
 
+        System.out.println("In");
 
         //Nếu không có category hoặc sản phẩm nào cụ thể, lấy initial product list
-        if(searchValue.isEmpty() && categories.isEmpty()){
+        if(searchValue.equals("null") && categories.equals("null")){
             initialInventory = getInitialInventory(username);
         }
         //Search
         //Chọn category mới
         //--> Tìm product theo đó
-        else if(!searchValue.isEmpty()){ //Search
+        else if(!searchValue.equals("null")){ //Search
+
             initialInventory = getUserProductList(username).stream()
-                    .filter(trackedUserProduct -> trackedUserProduct.getProduct().getProductName().contains(searchValue))
+                    .filter(trackedUserProduct -> trackedUserProduct.getProduct().getProductName().toUpperCase(Locale.ROOT).contains(searchValue.toUpperCase(Locale.ROOT)))
                     .toList();
             return toTrackedUserProductResponse(initialInventory);
         }
-        else { //categories true
+        else{ //categories true
             //categories = "name-name-name-name" limit (5 categories picking)
 
             String[] chosenCategories = categories.split("-",5);
@@ -812,7 +893,7 @@ public class TrackedUserProductService {
         }
 
         //status
-        if(!status.isEmpty()){
+        if(!status.equals("null")){
             Set<String> productIds = new HashSet<>();
             String[] chosenStatus = status.split("-",3);
             for (String status_ : chosenStatus) {
@@ -842,7 +923,7 @@ public class TrackedUserProductService {
         }
 
         //lateness
-        if(!lateness.isEmpty()){
+        if(!lateness.equals("null")){
             Set<String> productIds = new HashSet<>();
             String[] chosenLateness = lateness.split("-",3);
             for (String lateness_ : chosenLateness) { //STATUS
@@ -865,7 +946,7 @@ public class TrackedUserProductService {
 
         //sort by
 
-        if(!sortBy.isEmpty()){
+        if(!sortBy.equals("null")){
             if(sortBy.equals("EXPIRED_DATE")){
                 initialInventory.sort((obj1, obj2) -> {
                     TrackedUserProduct trackedUserProduct1 = (TrackedUserProduct) obj1;
@@ -890,9 +971,11 @@ public class TrackedUserProductService {
     }
 
     //Calendar
-    public List<TrackedCalendarProduct> getCalenderStatus(String username, int month, int year){
+    public TrackedCalendarProductResponse getCalenderStatus(String username, int month, int year){
         List<TrackedUserProduct> userProducts = getUserProductList(username);
-        return chooseCalendarProducts(userProducts,month,year);
+        return TrackedCalendarProductResponse.builder()
+                .calendarProductList(chooseCalendarProducts(userProducts,month,year))
+                .build();
     }
 
     private List<TrackedCalendarProduct> chooseCalendarProducts(List<TrackedUserProduct> userProducts, int month, int year){
@@ -921,7 +1004,8 @@ public class TrackedUserProductService {
         LocalDateTime openedProductSafeDate = null;
 
         LocalDate unopenedExpiryDate = calculatedTrackedProduct.getExpiryDate().toLocalDate();
-        int quantity = calculatedTrackedProduct.getQuantity(); //Gỉa định status của cả sản phẩm
+        int numProductUsed = calculatedTrackedProduct.isOpened() ? (calculatedTrackedProduct.getNumProductOpened() - 1) : (calculatedTrackedProduct.getNumProductOpened());
+        int quantity = calculatedTrackedProduct.getQuantity() - numProductUsed;
         int volume = calculatedTrackedProduct.getVolume();
 
         //Calculation
@@ -931,6 +1015,7 @@ public class TrackedUserProductService {
         unopenedProductSafeDate = unopenedExpiryDate.minusDays(daysNeedToFinish);
 
         if(calculatedTrackedProduct.isOpened()){ //Có sản phẩm đã mở nắp
+            log.info(calculatedTrackedProduct.getProduct().getProductName());
             TrackedUserProductOpened calculatedOpenedProduct = trackedProducMapper.jsonProductInUse(calculatedTrackedProduct.getProductsInUse());
             LocalDateTime openedExpiryDate = calculatedOpenedProduct.getOpenExpiryDate();
             int volumeLeft = calculatedOpenedProduct.getVolumeLeft(); //Đã được cập nhật mỗi ngày
@@ -952,7 +1037,11 @@ public class TrackedUserProductService {
         double days = Double.parseDouble(givenFrequency[1]);
         double frequency = useTimes/days;
         int numberOfPeople =  trackedUserProduct.getPeopleUse();
-        return (frequency * numberOfPeople * trackedUserProduct.getProduct().getAvgUsageAmount());
+        double avgUsageAmount = trackedUserProduct.getProduct().getAvgUsageAmount();
+        if(avgUsageAmount == 0){
+            avgUsageAmount = trackedUserProduct.getVolume();
+        }
+        return (frequency * numberOfPeople * avgUsageAmount);
     }
 
 
@@ -980,6 +1069,14 @@ public class TrackedUserProductService {
         List<TrackedCalendarProduct> calendarProducts = new ArrayList<>();
 
         List<Integer> checkedDates = Arrays.asList(30,7,3,0);
+        Map<Integer, String> statusDisplay = new HashMap<>();
+
+        statusDisplay.put(30,StatusE.MONTH_BEFORE.name());
+        statusDisplay.put(7,StatusE.SEVEN_DAYS_BEFORE.name());
+        statusDisplay.put(3,StatusE.THREE_DAYS_BEFORE.name());
+        statusDisplay.put(0,StatusE.LATE.name());
+        statusDisplay.put(-1,StatusE.SPOILT.name());
+
 
         LocalDate expiredDate = userProduct.getExpiryDate().toLocalDate();
 
@@ -991,6 +1088,7 @@ public class TrackedUserProductService {
                 calendarProducts.add(TrackedCalendarProduct.builder()
                         .trackedUserProduct(trackedProducMapper.toTrackedUserProductResponse(userProduct))
                         .dateDisplay(safeDate.minusDays(days))
+                        .statusDisplay(statusDisplay.get(days))
                         .build());
             }
         }
@@ -998,6 +1096,7 @@ public class TrackedUserProductService {
             calendarProducts.add(TrackedCalendarProduct.builder()
                     .trackedUserProduct(trackedProducMapper.toTrackedUserProductResponse(userProduct))
                     .dateDisplay(expiredDate)
+                    .statusDisplay(statusDisplay.get(-1))
                     .build());
         }
 
@@ -1017,7 +1116,7 @@ public class TrackedUserProductService {
                     .findFirst()
                     .orElseThrow();
 
-            long totExpense = calculatedExpense.getTotMoneySpent();
+            long totExpense = 0;
 
             List<TrackedUserProduct> userProducts = new ArrayList<>();
             for(var transaction: calculatedExpense.getTransactions()){
@@ -1030,12 +1129,12 @@ public class TrackedUserProductService {
                 String categoryName = userProduct.getProduct().getCategory().getCategoryName() + "-"
                         + userProduct.getProduct().getCategory().getImagePath();
 
-
-
                 int costOfCategory = mapCalculatedCategory.get(categoryName) == null ? 0
                         : mapCalculatedCategory.get(categoryName);
 
-                mapCalculatedCategory.put(categoryName,costOfCategory + userProduct.getCost()); // {Tên category: Tiền đã chi}
+                totExpense += costOfCategory + (long)userProduct.getCost() * userProduct.getQuantity();
+
+                mapCalculatedCategory.put(categoryName,costOfCategory + userProduct.getCost() * userProduct.getQuantity()); // {Tên category: Tiền đã chi}
             }
 
             return ExpenseResponse.builder()
@@ -1048,8 +1147,10 @@ public class TrackedUserProductService {
                     .build();
         }catch (Exception e){
             e.printStackTrace();
+            return ExpenseResponse.builder()
+                    .categorizedExpense(new HashMap<>())
+                    .build();
         }
-        return null;
     }
 
     public void readJsonString(){
@@ -1102,6 +1203,5 @@ public class TrackedUserProductService {
         }
         return warningCategories;
     }
-
 
 }

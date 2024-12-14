@@ -30,6 +30,8 @@ public class TrackedUserProductResponse {
     boolean isOpened; //False
     String imagePath;
     String categoryImagePath;
+    String volumeUnit;
+    int numberOfProductsHasFinished;
 
     //Assume that we only manage 1 in-use product at a time
     TrackedUserProductOpened trackedUserProductOpened;

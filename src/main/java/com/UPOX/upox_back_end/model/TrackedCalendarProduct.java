@@ -16,6 +16,7 @@ import java.time.LocalDate;
 public class TrackedCalendarProduct {
     TrackedUserProductResponse trackedUserProduct; //Thông tin product --> Set event ở trên lịch (calendar detail)
     LocalDate dateDisplay; //Ngày hiển thị, thay đổi trạng thái của cái ngày, bằng cách đếm bao nhiêu sản phẩm trùng ngày nhau
+    String statusDisplay;
 
     //1 - 3 products trùng ngày: Màu xanh
     //4 - 7 products trùng ngày: Màu đỏ

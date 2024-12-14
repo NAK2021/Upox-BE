@@ -88,6 +88,9 @@ public class AuthenticateController {
         var result = authenticateService.authenticate(authenticateRequest); //Nhập đúng tài khoản mật khẩu
         ApiResponse<AuthenticateResponse> apiResponse = new ApiResponse<>();
         apiResponse.setResult(result);
+        if(result == null){
+            apiResponse.setMessage("Tài khoản chưa được kích hoạt");
+        }
 
         return apiResponse;
     }

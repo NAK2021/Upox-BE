@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+
 public class TrackedUserProductController {
 
     @Autowired
@@ -87,7 +88,7 @@ public class TrackedUserProductController {
     //Chưa test
     @PutMapping(path = "/finishUsing/{productId}/{transactionId}")
     ApiResponse<TrackedUserProductResponse> finishUsing(@PathVariable("productId") String productId, @PathVariable("transactionId") String transactionId){
-        var res = trackedUserProductService.finishUsingProduct(productId,transactionId);
+        var res = trackedUserProductService.finishUsingProduct(productId, transactionId);
         ApiResponse<TrackedUserProductResponse> apiResponse = new ApiResponse<>();
         apiResponse.setResult(res);
         return apiResponse;
@@ -109,6 +110,7 @@ public class TrackedUserProductController {
     @PutMapping(path = "/updateProduct/{productId}/{transactionId}")
     ApiResponse<TrackedUserProductResponse> updateProduct(@PathVariable("productId") String productId, @PathVariable("transactionId") String transactionId
         ,@RequestBody TrackedUserProductUpdateRequest updateRequest){
+        System.out.println(updateRequest.isOpened());
         var res = trackedUserProductService.updateProduct(productId,transactionId, updateRequest);
         ApiResponse<TrackedUserProductResponse> apiResponse = new ApiResponse<>();
         apiResponse.setResult(res);
@@ -117,11 +119,11 @@ public class TrackedUserProductController {
 
     //Choose using immediately --> GET (boolean) --> Check xem đã có product tương tự đã được sử dụng chưa
     //Đã test
-    @GetMapping(path = "/checkProductBeenUsing/{productId}")
-    ApiResponse<Boolean> checkProductBeenUsing(@PathVariable("productId") String productId){
+    @GetMapping(path = "/checkProductBeenUsing/{productName}")
+    ApiResponse<Boolean> checkProductBeenUsing(@PathVariable("productName") String productName){
         var context = SecurityContextHolder.getContext();
         String userName = context.getAuthentication().getName();
-        var res = trackedUserProductService.isProductBeenUsing(productId, userName);
+        var res = trackedUserProductService.isProductBeenUsing(productName, userName);
         ApiResponse<Boolean> apiResponse = new ApiResponse<>();
         apiResponse.setResult(res);
         return apiResponse;
@@ -152,14 +154,21 @@ public class TrackedUserProductController {
     //Đã test - Chưa test nhiều loại
     //Inventory --> GET: TrackedUserProductListResponse --> Danh sách các product của bạn
     @GetMapping(path = "/getInventory")
-    ApiResponse<TrackedUserProductListResponse> getInitialInventory(){
+    ApiResponse<InventoryResponse> getInitialInventory(){
         var context = SecurityContextHolder.getContext();
         String userName = context.getAuthentication().getName();
         var res = trackedUserProductService.getInitialInventory(userName);
-        ApiResponse<TrackedUserProductListResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(TrackedUserProductListResponse.builder()
-                .responseList(trackedUserProductService.toTrackedUserProductResponse(res))
-                .build());
+        var cate = trackedUserProductService.getSuggestionCategories(userName);
+
+        ApiResponse<InventoryResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(
+                InventoryResponse.builder()
+                        .displayedProduct(TrackedUserProductListResponse.builder()
+                                .responseList(trackedUserProductService.toTrackedUserProductResponse(res))
+                                .build())
+                        .suggestionCategories(cate)
+                        .build()
+        );
         return apiResponse;
     }
 
@@ -185,7 +194,7 @@ public class TrackedUserProductController {
     //Đã test - Chưa test nhiều loại
     @GetMapping(path = "/getCalendar/{monthYear}")
     //monthYear = mm-yyyy
-    ApiResponse<List<TrackedCalendarProduct>> getCalendar(@PathVariable("monthYear") String monthYear){
+    ApiResponse<TrackedCalendarProductResponse> getCalendar(@PathVariable("monthYear") String monthYear){
         var context = SecurityContextHolder.getContext();
         String userName = context.getAuthentication().getName();
 
@@ -195,7 +204,7 @@ public class TrackedUserProductController {
 
         var res = trackedUserProductService.getCalenderStatus(userName,month,year);
 
-        ApiResponse<List<TrackedCalendarProduct>> apiResponse = new ApiResponse<>();
+        ApiResponse<TrackedCalendarProductResponse> apiResponse = new ApiResponse<>();
         apiResponse.setResult(res);
         return apiResponse;
     }
@@ -251,12 +260,39 @@ public class TrackedUserProductController {
         notificationService.processOverExpenseMessage(userName);
     }
 
+    @GetMapping(path = "/getNotification")
+    ApiResponse<NotificationListResponse> getNotification(){
+        var context = SecurityContextHolder.getContext();
+        String userName = context.getAuthentication().getName();
+
+        List<NotificationResponse> notifications = notificationService.getNotifications(userName);
+        ApiResponse<NotificationListResponse> apiResponse = new ApiResponse<>();
+
+        apiResponse.setResult(NotificationListResponse.builder()
+                .notificationResponses(notifications)
+                .build());
+
+        return apiResponse;
+    }
+
     @PostMapping(path = "/updateUserFirebaseToken")
     void updateUserFirebaseToken(@RequestBody FirebaseTokenCreateRequest firebaseTokenCreateRequest){
         var context = SecurityContextHolder.getContext();
         String userName = context.getAuthentication().getName();
 
         notificationService.updateFirebaseToken(userName,firebaseTokenCreateRequest);
+    }
+
+    @GetMapping(path = "/getAllProductSameName/{productName}")
+    ApiResponse<TrackedUserProductListResponse> getAllProductSameName(@PathVariable("productName") String productName){
+        var context = SecurityContextHolder.getContext();
+        String userName = context.getAuthentication().getName();
+
+        var res = trackedUserProductService.getAllProductSameName(productName,userName);
+
+        ApiResponse<TrackedUserProductListResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(res);
+        return apiResponse;
     }
 
     @GetMapping(path = "/testJson")

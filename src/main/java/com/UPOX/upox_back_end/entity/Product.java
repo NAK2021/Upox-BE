@@ -38,7 +38,7 @@ public class Product {
 
     //Mới thêm
     String defOpenedExpiredDate; //8 tiếng (thời gian + đơn vị)
-
+    String volumeUnit;
     //Foreign Key
 
     //Category

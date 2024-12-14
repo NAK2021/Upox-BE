@@ -117,9 +117,9 @@ public class Mapper implements MappingInterface {
     }
 
 
-    private void initializeProductInUse(TrackedUserProduct newTrackedUserProduct, Product product){
+    public void initializeProductInUse(TrackedUserProduct newTrackedUserProduct, Product product){
         newTrackedUserProduct.setOpened(true);
-        newTrackedUserProduct.setNumProductOpened(1); //Tổng sản phẩm đã mở
+        newTrackedUserProduct.setNumProductOpened(newTrackedUserProduct.getNumProductOpened() + 1); //Tổng sản phẩm đã dùng
         newTrackedUserProduct.setDateOpen(LocalDateTime.now()); //Ngày mở mới nhất
         newTrackedUserProduct.setVolumeLeft(newTrackedUserProduct.getVolume()); //Tổng volume còn lại (tính sản phẩm đang mở thôi)
 
@@ -142,7 +142,8 @@ public class Mapper implements MappingInterface {
             }
         }
         else { //Dùng hết trong một lần dùng --> chỉ cần trừ quantity
-            newTrackedUserProduct.setQuantity(newTrackedUserProduct.getQuantity() - 1);
+//            newTrackedUserProduct.setNumProductOpened(newTrackedUserProduct.getNumProductOpened() + 1);
+            //Không thay đổi quantity, khi tính toán số lượng còn lại (quantityLeft = quantity - numProductOpened)
         }
     }
 
@@ -152,7 +153,7 @@ public class Mapper implements MappingInterface {
                                                    Product product){
 
         //Set basic information
-        boolean isOpened_bool = Boolean.parseBoolean(request.getIsOpened());
+        boolean isOpened_bool = request.isOpened();
 
         TrackedUserProduct newTrackedUserProduct = TrackedUserProduct.builder()
                 //Set relationship
@@ -214,10 +215,18 @@ public class Mapper implements MappingInterface {
                 .isOpened(trackedUserProduct.isOpened())
                 .imagePath(trackedUserProduct.getProduct().getImagePath())
                 .categoryImagePath(trackedUserProduct.getProduct().getCategory().getImagePath())
+                .volumeUnit(trackedUserProduct.getProduct().getVolumeUnit())
+                .numberOfProductsHasFinished(trackedUserProduct.getNumProductOpened())
                 .build();
 
         if(trackedUserProduct.isOpened()){
-            response.setTrackedUserProductOpened(jsonProductInUse(trackedUserProduct.getProductsInUse()));
+            if(trackedUserProduct.getProductsInUse() == null){ //Những sản phẩm dùng hết liền
+                trackedUserProduct.setOpened(false);
+                response.setOpened(false);
+            }
+            else {  //Những sản phẩm dùng không hết liền
+                response.setTrackedUserProductOpened(jsonProductInUse(trackedUserProduct.getProductsInUse()));
+            }
         }
 
         return response;
